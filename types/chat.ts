@@ -2,6 +2,7 @@ export interface MessageFeedback {
   messageId: string;
   rating: "positive" | "negative";
   text?: string;
+  liked?: boolean;
 }
 
 export interface Message {

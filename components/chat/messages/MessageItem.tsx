@@ -3,14 +3,7 @@ import { Message } from "@/types/chat";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  ThumbsUp,
-  ThumbsDown,
-  Copy,
-  Check,
-  PencilIcon,
-  File,
-} from "lucide-react";
+import { ThumbsUp, ThumbsDown, Copy, Check, PencilIcon } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -26,6 +19,20 @@ interface MessageItemProps {
   onFeedback?: (messageId: string, type: "like" | "dislike") => void;
   onEdit?: (messageId: string, content: string) => void;
 }
+
+const formatTimestamp = (timestamp?: number): string => {
+  if (!timestamp) return "";
+
+  const date = new Date(timestamp);
+  return date.toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
 
 export const MessageItem: React.FC<MessageItemProps> = ({
   message,
@@ -62,23 +69,10 @@ export const MessageItem: React.FC<MessageItemProps> = ({
               "text-sm font-bold",
               message.role === "assistant" ? "text-black" : "text-white"
             )}
+            suppressHydrationWarning
           >
             {message.role === "assistant" ? "AI Assistant" : "You"}
           </span>
-
-          {message.files && message.files.length > 0 && (
-            <div className="flex flex-1 justify-center flex-wrap gap-2">
-              {message.files.map((file) => (
-                <div
-                  key={file.name}
-                  className="flex items-center gap-2 bg-white rounded-lg p-1 border-white border-2"
-                >
-                  <File className="h-3 w-3 text-black" />
-                  <span className="text-xs text-black">{file.name}</span>
-                </div>
-              ))}
-            </div>
-          )}
 
           {message.role === "user" && (
             <Tooltip>
@@ -157,6 +151,10 @@ export const MessageItem: React.FC<MessageItemProps> = ({
           {message.content}
         </ReactMarkdown>
 
+        <div className="text-sm text-muted-foreground" suppressHydrationWarning>
+          {formatTimestamp(message.timestamp)}
+        </div>
+
         {message.role === "assistant" && (
           <div className="flex items-center gap-2 mt-2">
             <Tooltip>
@@ -166,7 +164,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                   size="sm"
                   className={cn(
                     "h-8 w-8 hover:bg-black/5",
-                    message.feedback?.liked
+                    message.feedback?.rating === "positive"
                       ? "bg-black text-white"
                       : "text-black"
                   )}
@@ -187,7 +185,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                   size="sm"
                   className={cn(
                     "h-8 w-8 hover:bg-black/5",
-                    message.feedback?.disliked
+                    message.feedback?.rating === "negative"
                       ? "bg-black text-white"
                       : "text-black"
                   )}

@@ -1,15 +1,13 @@
 import { ChangeEvent, KeyboardEvent, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Upload } from "lucide-react";
+import { Send } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { FilePreview } from "../files/FilePreview";
-import { useFileUpload } from "@/hooks/useFileUpload";
 
 interface ChatInputProps {
   inputText: string;
@@ -27,8 +25,6 @@ export function ChatInput({
   credits,
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { selectedFiles, fileInputRef, handleFileUpload, removeFile } =
-    useFileUpload();
 
   const adjustTextareaHeight = () => {
     if (textareaRef.current) {
@@ -52,8 +48,7 @@ export function ChatInput({
   const getTooltipContent = () => {
     if (isStreaming) return "Processing...";
     if (credits <= 0) return "No credits remaining";
-    if (!inputText.trim() && selectedFiles.length === 0)
-      return "Type a message";
+    if (!inputText.trim()) return "Type a message";
     return "Send message";
   };
 
@@ -66,57 +61,15 @@ export function ChatInput({
         }}
         className="max-w-3xl mx-auto"
       >
-        {/* File Previews */}
-        {selectedFiles.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-2">
-            {selectedFiles.map((file) => (
-              <FilePreview
-                key={file.name}
-                file={file}
-                onRemove={() => removeFile(file)}
-              />
-            ))}
-          </div>
-        )}
-
         <div className="flex gap-2 items-end">
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-            className="hidden"
-            multiple
-            accept=".pdf,.csv,.txt,.js,.jsx,.ts,.tsx,.json,.md"
-          />
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-8 w-8 p-0"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isStreaming}
-                >
-                  <Upload className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Upload files</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
           <Textarea
             ref={textareaRef}
             value={inputText}
             onChange={handleTextareaChange}
             onKeyDown={handleKeyDown}
-            placeholder="Start typing and hit Enter"
-            className="resize-none bg-white border-black/10 focus:border-black text-black placeholder:text-black/50 text-sm min-h-[44px] py-3 px-4 dark:bg-black dark:text-white dark:border-white/10 dark:focus:border-white"
+            placeholder="Type your message..."
+            className="min-h-[44px] resize-none pr-12 scrollbar-hide"
             rows={1}
-            disabled={isStreaming}
           />
 
           <TooltipProvider>
@@ -124,20 +77,13 @@ export function ChatInput({
               <TooltipTrigger asChild>
                 <Button
                   type="submit"
-                  className="bg-black text-white hover:bg-black/90 h-11 w-11 flex-shrink-0 dark:bg-white dark:text-black dark:hover:bg-white/90"
                   size="icon"
-                  disabled={
-                    (!inputText.trim() && selectedFiles.length === 0) ||
-                    credits <= 0 ||
-                    isStreaming
-                  }
+                  disabled={isStreaming || credits <= 0 || !inputText.trim()}
                 >
                   <Send className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>
-                <p>{getTooltipContent()}</p>
-              </TooltipContent>
+              <TooltipContent>{getTooltipContent()}</TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>

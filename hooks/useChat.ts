@@ -28,6 +28,7 @@ export function useChat({
         content: inputText.trim(),
         role: "user",
         timestamp: Date.now(),
+        isPricing: false,
       };
 
       try {
@@ -60,6 +61,7 @@ export function useChat({
             content: "",
             role: "assistant",
             timestamp: Date.now(),
+            isPricing: false,
           },
         ]);
 
@@ -115,8 +117,8 @@ export function useChat({
             return {
               ...message,
               feedback: {
-                liked: type === "like" ? true : false,
-                disliked: type === "dislike" ? true : false,
+                messageId,
+                rating: type === "like" ? "positive" : "negative",
               },
             };
           }
