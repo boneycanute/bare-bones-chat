@@ -1,13 +1,16 @@
 // useChat.ts
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Message, MessageFeedback } from "../types/chat";
+import { AgentData } from "../types/agent"; // Assuming AgentData type is defined in this file
 
 export function useChat({
   initialMessages = [],
   onError,
+  agentData,
 }: {
   initialMessages?: Message[];
   onError?: (error: Error) => void;
+  agentData?: AgentData;
 } = {}) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputText, setInputText] = useState("");
@@ -38,8 +41,13 @@ export function useChat({
         setError(null);
 
         const formData = new FormData();
-        formData.append("message", userMessage.content);
+        formData.append("message", inputText.trim());
         formData.append("sessionId", crypto.randomUUID());
+
+        // Add namespace if available from agent data
+        if (agentData?.vector_db_config?.namespace) {
+          formData.append("namespace", agentData.vector_db_config.namespace);
+        }
 
         const response = await fetch("/api/chat", {
           method: "POST",
@@ -106,7 +114,7 @@ export function useChat({
         setIsStreaming(false);
       }
     },
-    [inputText, isStreaming, onError]
+    [inputText, isStreaming, onError, agentData]
   );
 
   const handleFeedback = useCallback(

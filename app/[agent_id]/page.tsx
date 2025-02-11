@@ -83,11 +83,12 @@ interface ChatUIProps {
 
 const ChatUI = ({ params }: ChatUIProps) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [agentData, setAgentData] = useState<AgentData | null>(null);
+  const [agentData, setAgentData] = useState<AgentData | null | undefined>(
+    null
+  );
   const {
     messages,
     isStreaming,
-    error,
     credits,
     messageContainerRef,
     handleFeedback,
@@ -95,7 +96,7 @@ const ChatUI = ({ params }: ChatUIProps) => {
     handleFormSubmit,
     inputText,
     setInputText,
-  } = useChat();
+  } = useChat({ agentData: agentData || undefined });
 
   useEffect(() => {
     const initializeAgent = async () => {
@@ -109,11 +110,17 @@ const ChatUI = ({ params }: ChatUIProps) => {
           .single();
 
         console.log("Fetched agent data:", data);
-        setAgentData(data as AgentData);
+
+        if (data) {
+          setAgentData(data as AgentData);
+        } else {
+          setAgentData(null);
+        }
         setIsLoading(false);
       } catch (error) {
         console.error("Error initializing agent:", error);
         setIsLoading(false);
+        setAgentData(null);
         toast.error("Failed to initialize agent");
       }
     };
@@ -158,8 +165,6 @@ const ChatUI = ({ params }: ChatUIProps) => {
     <TooltipProvider>
       <div className="flex flex-col h-[100dvh] relative dark:bg-black">
         <ChatHeader credits={credits} onUpgradeClick={handleUpgradeClick} />
-
-        {error && <ErrorAlert error={error.message} />}
 
         <ScrollArea className="flex-1 p-4 flex items-center justify-center">
           <div className="max-w-3xl w-full mx-auto" ref={messageContainerRef}>
