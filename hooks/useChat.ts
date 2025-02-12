@@ -43,8 +43,10 @@ export function useChat({
         const formData = new FormData();
         formData.append("message", inputText.trim());
         formData.append("sessionId", crypto.randomUUID());
-
         // Add namespace if available from agent data
+        if (agentData?.system_prompt) {
+          formData.append("system_prompt", agentData.system_prompt);
+        }
         if (agentData?.vector_db_config?.namespace) {
           formData.append("namespace", agentData.vector_db_config.namespace);
         }

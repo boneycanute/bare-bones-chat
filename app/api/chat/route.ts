@@ -1,13 +1,15 @@
 // /app/api/chat/route.ts
 import { NextResponse } from "next/server";
 import { ChatOpenAI } from "@langchain/openai";
-import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import { BufferMemory } from "langchain/memory";
 import { ConversationChain } from "langchain/chains";
+import { SystemMessage } from "@langchain/core/messages";
 import { ChatMessageHistory } from "@langchain/community/stores/message/in_memory";
 import { PineconeStore } from "@langchain/pinecone";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { Pinecone } from "@pinecone-database/pinecone";
+import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { MessagesPlaceholder } from "@langchain/core/prompts";
 
 const chatSessions = new Map<string, ChatMessageHistory>();
 
@@ -23,18 +25,33 @@ export async function POST(req: Request) {
     console.log("Parsing form data...");
     const formData = await req.formData();
 
+    console.log("Form Data:", formData);
+
     // Log form data details
     console.log("Form Data Received:", {
       messageLength: formData.get("message")?.toString().length || 0,
       sessionId: formData.get("sessionId"),
       namespace: formData.get("namespace"),
       filesCount: formData.getAll("files").length,
+      systemPrompt: formData.get("system_prompt"),
     });
 
     const message = formData.get("message") as string;
     const sessionId = formData.get("sessionId") as string;
     const namespace = formData.get("namespace") as string | null;
     const files = formData.getAll("files") as File[];
+    const systemPrompt = formData.get("system_prompt") as string | null;
+
+    // Log all form data for debugging
+    console.log("Form Data Entries:", Array.from(formData.entries()));
+
+    // Additional detailed logging
+    console.log("Raw systemPrompt from formData:", systemPrompt);
+    console.log("Type of systemPrompt:", typeof systemPrompt);
+    console.log(
+      "Is systemPrompt null or empty?",
+      systemPrompt === null || systemPrompt === ""
+    );
 
     // Validate input
     if (!message && files.length === 0) {
@@ -286,17 +303,31 @@ export async function POST(req: Request) {
       ? `User Question: ${message}\n\n${fileContents}\n\nPlease analyze the above content and respond to the user's question.`
       : message;
 
-    // Initialize chat model with streaming
+    // Initialize chat model with streaming and system message
     const model = new ChatOpenAI({
       modelName: "gpt-4",
       streaming: true,
       temperature: 0.7,
     });
 
-    // Create conversation chain
+    // Prepare system message
+    const defaultSystemMessage = "You are a helpful assistant.";
+    console.log("System Prompt:", systemPrompt);
+    const systemMessageContent = systemPrompt || defaultSystemMessage;
+    const systemMessage = new SystemMessage(systemMessageContent);
+
+    // Log the system message for debugging
+    console.log("Final System Message:", systemMessageContent);
+
+    // Create conversation chain with system message
     const chain = new ConversationChain({
       llm: model,
       memory: memory,
+      prompt: ChatPromptTemplate.fromMessages([
+        systemMessage,
+        new MessagesPlaceholder("history"),
+        ["human", "{input}"],
+      ]),
     });
 
     // Create readable stream for response
@@ -306,7 +337,9 @@ export async function POST(req: Request) {
 
     // Process the conversation
     chain.call(
-      { input: fullMessage },
+      {
+        input: fullMessage,
+      },
       {
         callbacks: [
           {
