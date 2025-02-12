@@ -27,7 +27,6 @@ export async function POST(req: Request) {
 
     console.log("Form Data:", formData);
 
-    // Log form data details
     console.log("Form Data Received:", {
       messageLength: formData.get("message")?.toString().length || 0,
       sessionId: formData.get("sessionId"),
